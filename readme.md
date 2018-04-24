@@ -1,13 +1,18 @@
-# Spring PetClinic Sample Application [![Build Status](https://travis-ci.org/spring-projects/spring-petclinic.png?branch=master)](https://travis-ci.org/spring-projects/spring-petclinic/)
+# Spring PetClinic Sample Application
 
 ## Understanding the Spring Petclinic application with a few diagrams
 <a href="https://speakerdeck.com/michaelisvy/spring-petclinic-sample-application">See the presentation here</a>
 
+## Details about the Fork. 
+This fork had modfied to run with Google Cloud Platform mysql as the default database.  This also has a Dockerfile so the application can be easily containerized. 
+
 ## Running petclinic locally
+        Change the mqsql connection name in the application-mysql.properties
 ```
 	git clone https://github.com/spring-projects/spring-petclinic.git
 	cd spring-petclinic
-	./mvnw spring-boot:run
+	./mvnw -DskipTests spring-boot:run
+ 
 ```
 
 You can then access petclinic here: http://localhost:8080/
