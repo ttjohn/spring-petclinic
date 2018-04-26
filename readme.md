@@ -29,6 +29,7 @@ You can then access petclinic via webpreview of GCP Cloud shell
 ## Running petclinic in GCP in docker
 
 
+
 ## POM Changes for Cloud SQL
 
 Following are the pom changes already made to run with Cloud SQL
@@ -89,6 +90,35 @@ Change the src/main/resources/application.properties as follows
 
 # In the last line, add mysql to the spring.profiles.active property
 spring.profiles.active=mysql
+ 
+```
+
+## Changes for creating docker images for GCP
+
+Added the Docker file
+Changed the pom.xml for the maven plug-in to build docker images.
+```
+	
+<properties>
+   <docker.image.prefix>your gcp project name</docker.image.prefix>
+</properties>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>com.spotify</groupId>
+            <artifactId>dockerfile-maven-plugin</artifactId>
+            <version>1.3.6</version>
+            <configuration>
+                <repository>gcr.io/${docker.image.prefix}/${project.artifactId}</repository>
+                 <tag>${project.version}</tag>
+                <buildArgs>
+                    <JAR_FILE>target/${project.build.finalName}.jar</JAR_FILE>
+                </buildArgs>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
  
 ```
 
