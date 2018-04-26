@@ -29,7 +29,9 @@ You can then access petclinic via webpreview of GCP Cloud shell
 ## Running petclinic in GCP in docker
 
 
-# Followin are the pom changes already made to run with Cloud SQL
+## POM Changes for Cloud SQL
+
+Following are the pom changes already made to run with Cloud SQL
 
 ```
   <?xml version="1.0" encoding="UTF-8"?>
