@@ -28,7 +28,17 @@ You can then access petclinic via webpreview of GCP Cloud shell
 
 ## Running petclinic in GCP in docker
 
+Use the following commands to build, push and run the docker images.  
+You need to enable the Google Container API for the project to push the images in the following link
+https://console.cloud.google.com/apis/api/containerregistry.googleapis.com/overview?project=<your-project-id>
 
+```
+	./mvnw -DskipTests install dockerfile:build
+        ./mvnw -DskipTests dockerfile:push
+        docker run -p 8080:8080 -t gcr.io/ttjohn-petclinic/spring-petclinic:2.0.0
+ 
+```
+You can view the application view web preview in port 8080
 
 ## POM Changes for Cloud SQL
 
