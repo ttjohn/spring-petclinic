@@ -29,6 +29,68 @@ You can then access petclinic via webpreview of GCP Cloud shell
 ## Running petclinic in GCP in docker
 
 
+# Followin are the pom changes already made to run with Cloud SQL
+
+```
+  <?xml version="1.0" encoding="UTF-8"?>
+   <project xmlns="http://maven.apache.org/POM/4.0.0" ...>
+    ...
+    <!-- Add Spring Cloud GCP Dependency BOM -->
+    <dependencyManagement>
+        <dependencies>
+          <dependency>
+          <groupId>org.springframework.cloud</groupId>
+          <artifactId>spring-cloud-gcp-dependencies</artifactId>
+          <version>1.0.0.M2</version>
+          <type>pom</type>
+          <scope>import</scope>
+          </dependency>
+      </dependencies>
+    </dependencyManagement>
+    <dependencies>
+      ...
+      <!-- Add CloudSQL Starter for MySQL -->
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-gcp-starter-sql-mysql</artifactId>
+      </dependency>
+      ...
+    </dependencies>
+    <repositories>
+      <!-- Use Spring Milestone Repository -->
+      <repository>
+        <id>repository.spring.milestone</id>
+        <name>Spring Milestones Repository</name>
+        <url>http://repo.spring.io/milestone</url>
+      </repository>
+    </repositories>
+ 
+```
+Change the src/main/resources/application-myql.properties as follows 
+
+```
+database=mysql
+
+# Delete the rest of the original content of the file and replace with the following:
+spring.cloud.gcp.sql.database-name=petclinic
+spring.cloud.gcp.sql.instance-connection-name=YOUR_CLOUD_SQL_INSTANCE_CONNECTION_NAME
+
+# Initialize the database since the newly created Cloud SQL database has no tables. The following flag is for Spring Boot 2.
+spring.datasource.initialization-mode=always
+ 
+```
+Change the src/main/resources/application.properties as follows 
+
+```
+# Keep the content of the file the same
+...
+
+# In the last line, add mysql to the spring.profiles.active property
+spring.profiles.active=mysql
+ 
+```
+
+
 # License
 
 The Spring PetClinic sample application is released under version 2.0 of the [Apache License](http://www.apache.org/licenses/LICENSE-2.0).
