@@ -15,7 +15,7 @@
   <name>petclinic</name>
 
   <properties>
-   <docker.image.prefix>gcp-final-proj</docker.image.prefix>
+   <docker.image.prefix>ttjohn-petclinic</docker.image.prefix>
 
     <!-- Generic properties -->
     <java.version>1.8</java.version>
@@ -136,13 +136,8 @@
             <artifactId>dockerfile-maven-plugin</artifactId>
             <version>1.3.6</version>
             <configuration>
-<<<<<<< HEAD
 		    <repository>gcr.io/${docker.image.prefix}/${project.artifactId}</repository>
 		    <tag>${project.version}</tag>
-=======
-                <repository>${docker.image.prefix}/${project.artifactId}</repository>
-				<tag>${project.version}</tag>
->>>>>>> 980c916d84e19e2de126eaa33989c2935c0630ba
                 <buildArgs>
                     <JAR_FILE>target/${project.build.finalName}.jar</JAR_FILE>
                 </buildArgs>

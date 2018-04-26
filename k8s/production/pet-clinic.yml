@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: petclinic
-        image: springio/spring-petclinic 
+        image: gcr.io/ttjohn-petclinic/spring-petclinic:2.0.0 
         ports:
         - containerPort: 8080
