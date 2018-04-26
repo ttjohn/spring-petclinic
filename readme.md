@@ -1,113 +1,141 @@
 # Spring PetClinic Sample Application
+This is a fork of Sping Pet Clinic. 
+Please refer https://github.com/spring-projects/spring-petclinic for the details of the project.
 
-## Understanding the Spring Petclinic application with a few diagrams
-<a href="https://speakerdeck.com/michaelisvy/spring-petclinic-sample-application">See the presentation here</a>
+## Changes in the fork. 
+   This fork dockerized the GCP application. 
+   Default application is configured to use MySQL on GCP Cloud. Database drivers dependencis are changed.
+   Kubernetes specs have been provided to run on k8s
+   
+   Note: You can change the application.properties and run with another MYSQL and run this Docker Container.
+ 
+## Setup GCP Database and Enviornment.
 
-## Details about the Fork. 
-This fork had modfied to run with Google Cloud Platform mysql as the default database.  This also has a Dockerfile so the application can be easily containerized. 
+1) Login to GCP Portal and create a project ttjohn-petclinic
+2) Create Cloud SQL using the command "gcloud sql instances create pet-instance"
+3) Create a database using "gcloud sql databases create petclinic --instance pet-instance"
+4) Find the connection name using "gcloud beta sql instances describe pet-instance |grep connectionName"
 
-## Running petclinic locally
-        Change the mqsql connection name in the application-mysql.properties
+## Running petclinic in GCP with out container
+Change the mqsql connection name in the application-mysql.properties.
 ```
 	git clone https://github.com/spring-projects/spring-petclinic.git
 	cd spring-petclinic
 	./mvnw -DskipTests spring-boot:run
  
 ```
+You can then access petclinic via webpreview of GCP Cloud shell
 
-You can then access petclinic here: http://localhost:8080/
+## Running petclinic in GCP in docker
 
-<img width="1042" alt="petclinic-screenshot" src="https://cloud.githubusercontent.com/assets/838318/19727082/2aee6d6c-9b8e-11e6-81fe-e889a5ddfded.png">
-
-## In case you find a bug/suggested improvement for Spring Petclinic
-Our issue tracker is available here: https://github.com/spring-projects/spring-petclinic/issues
-
-
-## Database configuration
-
-In its default configuration, Petclinic uses an in-memory database (HSQLDB) which
-gets populated at startup with data. A similar setup is provided for MySql in case a persistent database configuration is needed.
-Note that whenever the database type is changed, the data-access.properties file needs to be updated and the mysql-connector-java artifact from the pom.xml needs to be uncommented.
-
-You could start a MySql database with docker:
+Use the following commands to build, push and run the docker images.  
+You need to enable the Google Container API for the project to push the images in the following link
+https://console.cloud.google.com/apis/api/containerregistry.googleapis.com/overview?project=<your-project-id>
 
 ```
-docker run -e MYSQL_ROOT_PASSWORD=petclinic -e MYSQL_DATABASE=petclinic -p 3306:3306 mysql:5.7.8
+	./mvnw -DskipTests install dockerfile:build
+        ./mvnw -DskipTests dockerfile:push
+        docker run -p 8080:8080 -t gcr.io/ttjohn-petclinic/spring-petclinic:2.0.0
+ 
+```
+You can view the application view web preview in port 8080
+
+## POM Changes for Cloud SQL
+
+Following are the pom changes already made to run with Cloud SQL
+
+```
+  <?xml version="1.0" encoding="UTF-8"?>
+   <project xmlns="http://maven.apache.org/POM/4.0.0" ...>
+    ...
+    <!-- Add Spring Cloud GCP Dependency BOM -->
+    <dependencyManagement>
+        <dependencies>
+          <dependency>
+          <groupId>org.springframework.cloud</groupId>
+          <artifactId>spring-cloud-gcp-dependencies</artifactId>
+          <version>1.0.0.M2</version>
+          <type>pom</type>
+          <scope>import</scope>
+          </dependency>
+      </dependencies>
+    </dependencyManagement>
+    <dependencies>
+      ...
+      <!-- Add CloudSQL Starter for MySQL -->
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-gcp-starter-sql-mysql</artifactId>
+      </dependency>
+      ...
+    </dependencies>
+    <repositories>
+      <!-- Use Spring Milestone Repository -->
+      <repository>
+        <id>repository.spring.milestone</id>
+        <name>Spring Milestones Repository</name>
+        <url>http://repo.spring.io/milestone</url>
+      </repository>
+    </repositories>
+ 
+```
+Change the src/main/resources/application-myql.properties as follows 
+
+```
+database=mysql
+
+# Delete the rest of the original content of the file and replace with the following:
+spring.cloud.gcp.sql.database-name=petclinic
+spring.cloud.gcp.sql.instance-connection-name=YOUR_CLOUD_SQL_INSTANCE_CONNECTION_NAME
+
+# Initialize the database since the newly created Cloud SQL database has no tables. The following flag is for Spring Boot 2.
+spring.datasource.initialization-mode=always
+ 
+```
+Change the src/main/resources/application.properties as follows 
+
+```
+# Keep the content of the file the same
+...
+
+# In the last line, add mysql to the spring.profiles.active property
+spring.profiles.active=mysql
+ 
 ```
 
-## Working with Petclinic in Eclipse/STS
+## Changes for creating docker images for GCP
 
-### prerequisites
-The following items should be installed in your system:
-* Apache Maven (https://maven.apache.org/install.html)
-* git command line tool (https://help.github.com/articles/set-up-git)
-* Eclipse with the m2e plugin (m2e is installed by default when using the STS (http://www.springsource.org/sts) distribution of Eclipse)
-
-Note: when m2e is available, there is an m2 icon in Help -> About dialog.
-If m2e is not there, just follow the install process here: http://www.eclipse.org/m2e/m2e-downloads.html
-
-
-### Steps:
-
-1) In the command line
+Added the Docker file
+Changed the pom.xml for the maven plug-in to build docker images.
 ```
-git clone https://github.com/spring-projects/spring-petclinic.git
+	
+<properties>
+   <docker.image.prefix>your gcp project name</docker.image.prefix>
+</properties>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>com.spotify</groupId>
+            <artifactId>dockerfile-maven-plugin</artifactId>
+            <version>1.3.6</version>
+            <configuration>
+                <repository>gcr.io/${docker.image.prefix}/${project.artifactId}</repository>
+                 <tag>${project.version}</tag>
+                <buildArgs>
+                    <JAR_FILE>target/${project.build.finalName}.jar</JAR_FILE>
+                </buildArgs>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+ 
 ```
-2) Inside Eclipse
-```
-File -> Import -> Maven -> Existing Maven project
-```
+## References 
+https://spring.io/guides/gs/spring-boot-docker/
 
+https://codelabs.developers.google.com/codelabs/cloud-spring-petclinic-cloudsql/index.html?index=..%2F..%2Findex#0
 
-## Looking for something in particular?
-
-|Spring Boot Configuration | Class or Java property files  |
-|--------------------------|---|
-|The Main Class | [PetClinicApplication](https://github.com/spring-projects/spring-petclinic/blob/master/src/main/java/org/springframework/samples/petclinic/PetClinicApplication.java) |
-|Properties Files | [application.properties](https://github.com/spring-projects/spring-petclinic/blob/master/src/main/resources) |
-|Caching | [CacheConfig](https://github.com/spring-projects/spring-petclinic/blob/master/src/main/java/org/springframework/samples/petclinic/system/CacheConfig.java) |
-
-## Interesting Spring Petclinic branches and forks
-
-The Spring Petclinic master branch in the main
-[spring-projects](https://github.com/spring-projects/spring-petclinic)
-GitHub org is the "canonical" implementation, currently based on
-Spring Boot and Thymeleaf. There are quite a few forks in a special
-GitHub org [spring-petclinic](https://github.com/spring-petclinic). If
-you have a special interest in a different technology stack that could
-be used to implement the Pet Clinic then please join the community
-there.
-
-| Link                               | Main technologies |
-|------------------------------------|-------------------|
-| [spring-framework-petclinic][]     | Spring Framework XML configuration, JSP pages, 3 persistence layers: JDBC, JPA and Spring Data JPA |
-| [javaconfig branch][]              | Same frameworks as the [spring-framework-petclinic][] but with Java Configuration instead of XML |
-| [spring-petclinic-angularjs][]     | AngularJS 1.x, Spring Boot and Spring Data JPA |
-| [spring-petclinic-angular][]       | Angular 4 front-end of the Petclinic REST API [spring-petclinic-rest][] |
-| [spring-petclinic-microservices][] | Distributed version of Spring Petclinic built with Spring Cloud |
-| [spring-petclinic-reactjs][]       | ReactJS (with TypeScript) and Spring Boot |
-| [spring-petclinic-graphql][]       | GraphQL version based on React Appolo, TypeScript and GraphQL Spring boot starter |
-| [spring-petclinic-kotlin][]        | Kotlin version of [spring-petclinic][] |
-| [spring-petclinic-rest][]          | Backend REST API |
-
-
-## Interaction with other open source projects
-
-One of the best parts about working on the Spring Petclinic application is that we have the opportunity to work in direct contact with many Open Source projects. We found some bugs/suggested improvements on various topics such as Spring, Spring Data, Bean Validation and even Eclipse! In many cases, they've been fixed/implemented in just a few days.
-Here is a list of them:
-
-| Name | Issue |
-|------|-------|
-| Spring JDBC: simplify usage of NamedParameterJdbcTemplate | [SPR-10256](https://jira.springsource.org/browse/SPR-10256) and [SPR-10257](https://jira.springsource.org/browse/SPR-10257) |
-| Bean Validation / Hibernate Validator: simplify Maven dependencies and backward compatibility |[HV-790](https://hibernate.atlassian.net/browse/HV-790) and [HV-792](https://hibernate.atlassian.net/browse/HV-792) |
-| Spring Data: provide more flexibility when working with JPQL queries | [DATAJPA-292](https://jira.springsource.org/browse/DATAJPA-292) |
-
-
-# Contributing
-
-The [issue tracker](https://github.com/spring-projects/spring-petclinic/issues) is the preferred channel for bug reports, features requests and submitting pull requests.
-
-For pull requests, editor preferences are available in the [editor config](.editorconfig) for easy use in common text editors. Read more and download plugins at <http://editorconfig.org>. If you have not previously done so, please fill out and submit the https://cla.pivotal.io/sign/spring[Contributor License Agreement].
 
 # License
 
